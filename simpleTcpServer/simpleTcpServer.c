@@ -91,7 +91,7 @@ int main(void)
         exit(3);
     }
 
-    printf("server: waiting for connections...\n");
+    printf("server: waiting for connections at port %s\n", PORT);
 
     while (1)
     {
@@ -103,11 +103,67 @@ int main(void)
             continue;
         }
 
+        char data[2000];
+
+        ssize_t data_read = recv(newfd, &data, 2000, 0);
+
+        printf("_____ \n %s \n ______ \n", data);
+
         printf("server: got connection from %s\n", inet_ntop(remoteaddr.ss_family,
                                                              get_in_addr((struct sockaddr *)&remoteaddr),
                                                              remoteIP, INET6_ADDRSTRLEN));
 
-        if (send(newfd, "Hello, world!", 13, 0) == -1)
+        char *body = "sdfkjbsfefewffwfwefwe foiwjf ofijew few";
+
+        	
+        /* declare a file pointer */
+        FILE    *infile;
+        char    *buffer;
+        long    numbytes;
+        
+        /* open an existing file for reading */
+        infile = fopen("index.html", "r");
+        
+        /* quit if the file does not exist */
+        if(infile == NULL)
+            return 1;
+        
+        /* Get the number of bytes */
+        fseek(infile, 0L, SEEK_END);
+        numbytes = ftell(infile);
+        
+        /* reset the file position indicator to 
+        the beginning of the file */
+        fseek(infile, 0L, SEEK_SET);	
+        
+        /* grab sufficient memory for the 
+        buffer to hold the text */
+        buffer = (char*)calloc(numbytes, sizeof(char));	
+        
+        /* memory error */
+        if(buffer == NULL)
+            return 1;
+        
+        /* copy all the text into the buffer */
+        fread(buffer, sizeof(char), numbytes, infile);
+        fclose(infile);
+        
+        /* confirm we have read the file by
+        outputing it to the console */
+        // printf("The file called test.dat contains this text\n\n%s", buffer);
+        
+        /* free the memory we used for the buffer */
+
+        char message[1000];
+
+        sprintf( message , "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %d\r\n\r\n%s", (int)strlen(buffer), buffer);
+
+        free(buffer);
+
+        // char *message = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 15\n\nsdfkjsdnbfkjbsf";
+
+
+        if (send(newfd, message, strlen(message), 0) == -1)
             perror("send");
         close(newfd);
     }
