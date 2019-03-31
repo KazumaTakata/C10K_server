@@ -12,8 +12,11 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "responce.hpp"
+#include "file.hpp"
+#include "request.hpp"
 
-std::map<std::string, std::string> http_request;
+// std::map<std::string, std::string> http_request;
 
 #define PORT "8889"
 
@@ -25,71 +28,6 @@ void *get_in_addr(struct sockaddr *sa)
     }
 
     return &(((struct sockaddr_in6 *)sa)->sin6_addr);
-}
-
-void parse_header(void *msg)
-{
-    char *head = (char *)msg;
-    char *mid;
-    char *tail = head;
-
-    if (sizeof(msg) == 0)
-    {
-        return;
-    }
-
-    // Find request type
-    while (*head++ != ' ')
-        ;
-    http_request["Type"] = std::string((char *)msg).substr(0, (head - 1) - tail);
-
-    // Find path
-    tail = head;
-    while (*head++ != ' ')
-        ;
-    http_request["Path"] = std::string((char *)msg).substr(tail - (char *)msg, (head - 1) - tail);
-
-    // Find HTTP version
-    tail = head;
-    while (*head++ != '\r')
-        ;
-    http_request["Version"] = std::string((char *)msg).substr(tail - (char *)msg, (head - 1) - tail);
-
-    // Map all headers from a key to a value
-    while (true)
-    {
-        tail = head + 1;
-        while (*head++ != '\r')
-            ;
-        mid = strstr(tail, ":");
-
-        // Look for the failed strstr
-        if (tail > mid)
-            break;
-
-        http_request[std::string((char *)msg).substr(tail - (char *)msg, (mid)-tail)] = std::string((char *)msg).substr(mid + 2 - (char *)msg, (head - 3) - mid);
-    }
-
-    // std::cout << std::endl;
-
-    // for (std::map<std::string, std::string>::iterator it = http_request.begin(); it != http_request.end(); ++it)
-    // {
-    //     std::cout << it->first << ":" << http_request[it->first] << std::endl;
-    // }
-
-    // std::cout << std::endl;
-}
-
-std::string read_file(std::string path)
-{
-    /* open an existing file for reading */
-    std::ifstream t(path);
-    std::stringstream buffer;
-    buffer << t.rdbuf();
-
-    // std::cout << buffer.str();
-
-    return buffer.str();
 }
 
 int main(void)
@@ -179,32 +117,11 @@ int main(void)
 
         ssize_t data_read = recv(newfd, &data, 2000, 0);
 
-        parse_header(data);
+        std::map<std::string, std::string> http_request = parse_header(data);
 
         std::cout << "path:" << http_request["Path"].substr(1) << std::endl;
 
-        // std::string buffer = read_file(http_request["Path"].substr(1));
-
-        std::string buffer = read_file(http_request["Path"].substr(1));
-
-        char message[1000];
-
-        if (http_request["Path"].substr(1) == "index.html")
-        {
-            sprintf(message, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %d\r\n\r\n%s", (int)strlen(buffer.c_str()), buffer.c_str());
-        }
-        else if (http_request["Path"].substr(1) == "main.css")
-        {
-            sprintf(message, "HTTP/1.1 200 OK\r\nContent-Type: text/css\r\nContent-Length: %d\r\n\r\n%s", (int)strlen(buffer.c_str()), buffer.c_str());
-        }
-        else
-        {
-            sprintf(message, "HTTP/1.1 200 OK\r\nContent-Type: text/javascript\r\nContent-Length: %d\r\n\r\n%s", (int)strlen(buffer.c_str()), buffer.c_str());
-        }
-
-        if (send(newfd, message, strlen(message), 0) == -1)
-            perror("send");
-        close(newfd);
+        http_responce(newfd, http_request);
     }
 
     return 0;
