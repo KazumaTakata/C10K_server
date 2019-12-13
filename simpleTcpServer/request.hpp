@@ -16,6 +16,45 @@
 #include <fstream>
 #include <sstream>
 
-std::map<std::string, std::string> parse_header(void *msg);
+using namespace std;
+
+map<std::string, std::string> parse_header(void *msg);
+
+enum Method
+{
+    OPTIONS,
+    GET,
+    HEAD,
+    POST,
+    PUT,
+    DELETE,
+    TRACE,
+    CONNECT,
+};
+
+enum HttpVersion
+{
+    HTTP_09,
+    HTTP_10,
+    HTTP_11,
+    HTTP_20,
+};
+
+typedef struct URI
+{
+    string uri;
+} URI;
+
+typedef struct RequestLine
+{
+    Method method;
+    URI uri;
+    HttpVersion version;
+} RequestLine;
+
+typedef struct Request
+{
+    RequestLine requestline;
+} Request;
 
 #endif

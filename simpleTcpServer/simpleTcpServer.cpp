@@ -15,10 +15,12 @@
 #include "responce.hpp"
 #include "file.hpp"
 #include "request.hpp"
+#include "help.hpp"
 
 // std::map<std::string, std::string> http_request;
 
 #define PORT "8889"
+#define BUFFERSIZE 65507
 
 void *get_in_addr(struct sockaddr *sa)
 {
@@ -113,9 +115,13 @@ int main(void)
             continue;
         }
 
-        char data[2000];
+        char data[BUFFERSIZE] = {'\0'};
 
-        ssize_t data_read = recv(newfd, &data, 2000, 0);
+        ssize_t data_read = recv(newfd, &data, BUFFERSIZE, 0);
+
+        std::string requestData(data);
+
+        dumpRequest("requestDump.txt", requestData);
 
         std::map<std::string, std::string> http_request = parse_header(data);
 
